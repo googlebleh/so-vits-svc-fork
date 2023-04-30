@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import warnings
@@ -301,6 +302,7 @@ def clean_checkpoints(
     """
     LOG.info("Cleaning old checkpoints...")
     path_to_models = Path(path_to_models)
+    using_google_colab = (os.getenv("COLAB_RELEASE_TAG") is not None)
 
     # Define sort key functions
     name_key = lambda p: int(re.match(r"[GD]_(\d+)", p.stem).group(1))
@@ -328,6 +330,11 @@ def clean_checkpoints(
         for to_delete in to_delete_list:
             if to_delete.exists():
                 LOG.info(f"Removing {to_delete}")
+                if using_google_colab:
+                    # On Colab, unlinking moves files to the trash,
+                    # which still takes up space. Truncate them first to
+                    # really free up space.
+                    to_delete.open("w").close()
                 to_delete.unlink()
 
 
